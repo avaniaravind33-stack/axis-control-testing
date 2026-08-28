@@ -497,27 +497,36 @@ def main():
     print("Generating HTML...")
     html = generate_html_dashboard(df, kpis)
 
-    # Add charts to HTML
-    chart_divs = {
-        'deficiency-chart': charts['deficiency'].to_html(include_plotlyjs=False, div_id='deficiency-chart'),
-        'control-effectiveness': charts['effectiveness'].to_html(include_plotlyjs=False, div_id='control-effectiveness'),
-        'risk-heatmap': charts['risk_heatmap'].to_html(include_plotlyjs=False, div_id='risk-heatmap'),
-        'volume-trend': charts['volume_trend'].to_html(include_plotlyjs=False, div_id='volume-trend'),
-        'exception-trend': charts['exception_trend'].to_html(include_plotlyjs=False, div_id='exception-trend'),
-        'exception-by-type': charts['exception_type'].to_html(include_plotlyjs=False, div_id='exception-by-type'),
+    # Add charts to HTML with full scripts
+    chart_ids = {
+        'deficiency-chart': charts['deficiency'],
+        'control-effectiveness': charts['effectiveness'],
+        'risk-heatmap': charts['risk_heatmap'],
+        'volume-trend': charts['volume_trend'],
+        'exception-trend': charts['exception_trend'],
+        'exception-by-type': charts['exception_type'],
     }
 
-    # Extract and insert chart scripts
-    final_html = html
-    for chart_id, chart_html in chart_divs.items():
+    # Generate script tags for each chart
+    chart_scripts = []
+    for chart_id, chart_obj in chart_ids.items():
+        chart_html = chart_obj.to_html(include_plotlyjs=False, div_id=chart_id)
+        # Extract the Plotly.newPlot call
         start = chart_html.find('Plotly.newPlot(')
-        end = chart_html.rfind(');') + 2
-        if start != -1 and end != 0:
+        if start == -1:
+            # Fallback: use full HTML and extract script
+            start = chart_html.find('<script')
+            if start != -1:
+                end = chart_html.find('</script>') + len('</script>')
+                script_content = chart_html[start:end]
+                chart_scripts.append(script_content)
+        else:
+            end = chart_html.rfind(');') + 2
             script_content = chart_html[start:end]
-            final_html = final_html.replace(
-                f'<div id="{chart_id}"></div>',
-                f'<div id="{chart_id}"></div>\n<script>{script_content}</script>'
-            )
+            chart_scripts.append(f'<script>{script_content}</script>')
+
+    # Insert scripts before closing body tag
+    final_html = html.replace('</body>', '\n'.join(chart_scripts) + '\n</body>')
 
     # Save
     output_path = 'website/index.html'
