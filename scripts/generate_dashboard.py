@@ -1,6 +1,6 @@
 """
 Axis Bank Control Testing - Web Dashboard Generator
-Creates professional audit/compliance analytics dashboard
+Creates professional audit/compliance analytics dashboard with chart explanations
 """
 
 import pandas as pd
@@ -25,183 +25,103 @@ def create_kpi_metrics(df):
         'critical': len(df[df['Deficiency Class'] == 'Critical']),
         'major': len(df[df['Deficiency Class'] == 'Major']),
         'minor': len(df[df['Deficiency Class'] == 'Minor']),
-        'c001_pass': len(df[df['C001_Maker_Checker'] == 'Pass']),
-        'c002_pass': len(df[df['C002_Auth_Limit'] == 'Pass']),
-        'c003_pass': len(df[df['C003_SOD'] == 'Pass']),
-        'c004_pass': len(df[df['C004_4Eyes'] == 'Pass']),
-        'c005_pass': len(df[df['C005_Duplicate'] == 'Pass']),
     }
 
-def create_deficiency_breakdown(df):
-    """Create deficiency breakdown chart"""
+def create_charts(df):
+    """Create all charts"""
+    charts = {}
+
+    # Chart 1: Deficiency Classification
     deficiency_data = df['Deficiency Class'].value_counts()
     colors = {'Critical': '#C00000', 'Major': '#FFC000', 'Minor': '#70AD47', 'None': '#1F4E78'}
 
-    fig = go.Figure(data=[
-        go.Bar(
-            x=[d for d in deficiency_data.index if d in colors],
-            y=[deficiency_data[d] for d in deficiency_data.index if d in colors],
-            marker=dict(color=[colors[d] for d in deficiency_data.index if d in colors]),
-            text=[deficiency_data[d] for d in deficiency_data.index if d in colors],
-            textposition='auto',
-        )
-    ])
-    fig.update_layout(
-        title="Deficiency Classification Breakdown",
-        xaxis_title="Deficiency Class",
-        yaxis_title="Number of Exceptions",
-        height=400,
-        showlegend=False,
-        plot_bgcolor='#0f172a',
-        paper_bgcolor='#1e293b',
-        font=dict(color='#e2e8f0'),
-    )
-    return fig
+    x_vals = [d for d in deficiency_data.index if d != 'None']
+    y_vals = [int(deficiency_data[d]) for d in deficiency_data.index if d != 'None']
+    color_vals = [colors.get(d, '#666') for d in deficiency_data.index if d != 'None']
 
-def create_control_effectiveness(df):
-    """Create control-wise effectiveness"""
-    controls = {
-        'C001\nMaker/Checker': len(df[df['C001_Maker_Checker'] == 'Pass']),
-        'C002\nAuth Limit': len(df[df['C002_Auth_Limit'] == 'Pass']),
-        'C003\nSOD': len(df[df['C003_SOD'] == 'Pass']),
-        'C004\n4-Eyes': len(df[df['C004_4Eyes'] == 'Pass']),
-        'C005\nDuplicate': len(df[df['C005_Duplicate'] == 'Pass']),
+    charts['deficiency'] = {
+        'x': x_vals,
+        'y': y_vals,
+        'colors': color_vals,
+        'title': 'Deficiency Classification Breakdown',
+        'description': 'Shows the distribution of control exceptions by severity level. Critical deficiencies represent failures of primary control objectives. Major deficiencies are significant deviations from control design. Minor deficiencies are isolated instances with minimal impact.'
     }
 
-    effectiveness = {k: (v / len(df) * 100) for k, v in controls.items()}
+    # Chart 2: Control Effectiveness
+    controls = ['C001\nMaker/Checker', 'C002\nAuth Limit', 'C003\nSOD', 'C004\n4-Eyes', 'C005\nDuplicate']
+    pass_rates = [
+        float(len(df[df['C001_Maker_Checker'] == 'Pass']) / len(df) * 100),
+        float(len(df[df['C002_Auth_Limit'] == 'Pass']) / len(df) * 100),
+        float(len(df[df['C003_SOD'] == 'Pass']) / len(df) * 100),
+        float(len(df[df['C004_4Eyes'] == 'Pass']) / len(df) * 100),
+        float(len(df[df['C005_Duplicate'] == 'Pass']) / len(df) * 100),
+    ]
 
-    fig = go.Figure(data=[
-        go.Bar(
-            x=list(effectiveness.keys()),
-            y=list(effectiveness.values()),
-            marker=dict(color=['#1F4E78' if v > 99 else '#FFC000' if v > 95 else '#C00000' for v in effectiveness.values()]),
-            text=[f'{v:.1f}%' for v in effectiveness.values()],
-            textposition='auto',
-        )
-    ])
-    fig.update_layout(
-        title="Control Operating Effectiveness (%)",
-        xaxis_title="Control",
-        yaxis_title="Effectiveness %",
-        height=400,
-        showlegend=False,
-        plot_bgcolor='#0f172a',
-        paper_bgcolor='#1e293b',
-        font=dict(color='#e2e8f0'),
-    )
-    return fig
+    charts['effectiveness'] = {
+        'x': controls,
+        'y': pass_rates,
+        'colors': ['#1F4E78' if v > 99 else '#FFC000' if v > 95 else '#C00000' for v in pass_rates],
+        'title': 'Control Operating Effectiveness (%)',
+        'description': 'Operating effectiveness measures whether each control actually operated as designed throughout the testing period. Higher percentages indicate controls performed consistently. This metric validates that design intent translated to actual execution.'
+    }
 
-def create_transaction_volume_trend(df):
-    """Create transaction volume trend"""
-    daily_volume = df.groupby(df['Date'].dt.date).size()
-
-    fig = go.Figure(data=[
-        go.Scatter(
-            x=daily_volume.index,
-            y=daily_volume.values,
-            mode='lines+markers',
-            line=dict(color='#1F4E78', width=2),
-            fill='tozeroy',
-            hovertemplate='<b>%{x}</b><br>Transactions: %{y}<extra></extra>'
-        )
-    ])
-    fig.update_layout(
-        title="Daily Transaction Volume Trend",
-        xaxis_title="Date",
-        yaxis_title="Transactions",
-        height=400,
-        plot_bgcolor='#0f172a',
-        paper_bgcolor='#1e293b',
-        font=dict(color='#e2e8f0'),
-    )
-    return fig
-
-def create_exception_trend(df):
-    """Create exception trend"""
-    daily_exceptions = df[df['Deficiency Class'] != 'None'].groupby(df['Date'].dt.date).size()
-
-    fig = go.Figure(data=[
-        go.Scatter(
-            x=daily_exceptions.index,
-            y=daily_exceptions.values,
-            mode='lines+markers',
-            line=dict(color='#C00000', width=2),
-            fill='tozeroy',
-            hovertemplate='<b>%{x}</b><br>Exceptions: %{y}<extra></extra>'
-        )
-    ])
-    fig.update_layout(
-        title="Daily Exception Trend",
-        xaxis_title="Date",
-        yaxis_title="Exceptions",
-        height=400,
-        plot_bgcolor='#0f172a',
-        paper_bgcolor='#1e293b',
-        font=dict(color='#e2e8f0'),
-    )
-    return fig
-
-def create_exception_by_txn_type(df):
-    """Create exceptions by transaction type"""
-    exc_by_type = df[df['Deficiency Class'] != 'None']['Transaction Type'].value_counts()
-
-    fig = go.Figure(data=[
-        go.Bar(
-            x=exc_by_type.values,
-            y=exc_by_type.index,
-            orientation='h',
-            marker=dict(color='#FFC000'),
-            text=exc_by_type.values,
-            textposition='auto',
-        )
-    ])
-    fig.update_layout(
-        title="Exceptions by Transaction Type",
-        xaxis_title="Count",
-        yaxis_title="Transaction Type",
-        height=400,
-        plot_bgcolor='#0f172a',
-        paper_bgcolor='#1e293b',
-        font=dict(color='#e2e8f0'),
-    )
-    return fig
-
-def create_risk_heatmap(df):
-    """Create risk heat map by control and deficiency"""
-    controls = ['C001_Maker_Checker', 'C002_Auth_Limit', 'C003_SOD', 'C004_4Eyes', 'C005_Duplicate']
+    # Chart 3: Risk Heat Map
+    controls_list = ['C001', 'C002', 'C003', 'C004', 'C005']
     risk_data = []
-
-    for control in controls:
-        critical = len(df[(df[control] != 'Pass') & (df['Deficiency Class'] == 'Critical')])
-        major = len(df[(df[control] != 'Pass') & (df['Deficiency Class'] == 'Major')])
-        minor = len(df[(df[control] != 'Pass') & (df['Deficiency Class'] == 'Minor')])
+    for control_col in ['C001_Maker_Checker', 'C002_Auth_Limit', 'C003_SOD', 'C004_4Eyes', 'C005_Duplicate']:
+        critical = int(len(df[(df[control_col] != 'Pass') & (df['Deficiency Class'] == 'Critical')]))
+        major = int(len(df[(df[control_col] != 'Pass') & (df['Deficiency Class'] == 'Major')]))
+        minor = int(len(df[(df[control_col] != 'Pass') & (df['Deficiency Class'] == 'Minor')]))
         risk_data.append([critical, major, minor])
 
-    fig = go.Figure(data=go.Heatmap(
-        z=risk_data,
-        x=['Critical', 'Major', 'Minor'],
-        y=['C001', 'C002', 'C003', 'C004', 'C005'],
-        colorscale='Reds',
-        text=risk_data,
-        texttemplate='%{text}',
-        textfont={"size": 12},
-    ))
-    fig.update_layout(
-        title="Risk Heat Map: Control vs Deficiency Class",
-        height=400,
-        plot_bgcolor='#0f172a',
-        paper_bgcolor='#1e293b',
-        font=dict(color='#e2e8f0'),
-    )
-    return fig
+    charts['heatmap'] = {
+        'z': risk_data,
+        'x': ['Critical', 'Major', 'Minor'],
+        'y': controls_list,
+        'title': 'Risk Heat Map: Control vs Deficiency Class',
+        'description': 'This heat map visualizes the intersection of control failures and deficiency severity. Darker red cells indicate higher concentration of critical failures. It helps prioritize remediation efforts by identifying which controls have the most severe impacts.'
+    }
+
+    # Chart 4: Transaction Volume
+    daily_volume = df.groupby(df['Date'].dt.date).size()
+    charts['volume'] = {
+        'x': [str(d) for d in daily_volume.index],
+        'y': [int(v) for v in daily_volume.values],
+        'title': 'Daily Transaction Volume Trend',
+        'description': 'Shows transaction processing volume over the testing period. Consistent volume indicates steady-state operations. Spikes may indicate month-end or special processing periods where control failures are more likely.'
+    }
+
+    # Chart 5: Exception Trend
+    daily_exceptions = df[df['Deficiency Class'] != 'None'].groupby(df['Date'].dt.date).size()
+    charts['exceptions'] = {
+        'x': [str(d) for d in daily_exceptions.index],
+        'y': [int(v) for v in daily_exceptions.values],
+        'title': 'Daily Exception Trend',
+        'description': 'Tracks the number of control exceptions (failures) detected daily. This trend reveals whether control breakdowns are clustered (systemic issue) or scattered (isolated incidents). Consistent low-level exceptions suggest design weaknesses; sudden spikes suggest operational failures.'
+    }
+
+    # Chart 6: Exceptions by Type
+    exc_by_type = df[df['Deficiency Class'] != 'None']['Transaction Type'].value_counts()
+    charts['by_type'] = {
+        'x': [int(v) for v in exc_by_type.values],
+        'y': list(exc_by_type.index),
+        'title': 'Exceptions by Transaction Type',
+        'description': 'Identifies which transaction types are most prone to control failures. This helps determine if certain processes need stronger controls or additional training. For example, if remittances have more exceptions than sweeps, remediation can be targeted accordingly.'
+    }
+
+    return charts
 
 def generate_html_dashboard(df, kpis, charts):
-    """Generate complete HTML dashboard with embedded charts"""
+    """Generate HTML with explanatory text"""
 
-    # Convert charts to JSON for embedding
-    chart_json = {}
-    for name, fig in charts.items():
-        chart_json[name] = fig.to_json()
+    chart_explanations = {
+        'deficiency': charts['deficiency']['description'],
+        'effectiveness': charts['effectiveness']['description'],
+        'heatmap': charts['heatmap']['description'],
+        'volume': charts['volume']['description'],
+        'exceptions': charts['exceptions']['description'],
+        'by_type': charts['by_type']['description'],
+    }
 
     html_content = f"""
     <!DOCTYPE html>
@@ -260,21 +180,11 @@ def generate_html_dashboard(df, kpis, charts):
                 font-weight: 800;
                 position: relative;
                 z-index: 1;
-                letter-spacing: -1px;
             }}
 
             .header p {{
                 font-size: 1.3em;
                 opacity: 0.95;
-                position: relative;
-                z-index: 1;
-                font-weight: 300;
-            }}
-
-            .reporting-date {{
-                font-size: 0.95em;
-                opacity: 0.85;
-                margin-top: 20px;
                 position: relative;
                 z-index: 1;
             }}
@@ -292,27 +202,12 @@ def generate_html_dashboard(df, kpis, charts):
                 border-radius: 12px;
                 border: 1px solid #334155;
                 text-align: center;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                cursor: pointer;
-                position: relative;
-                overflow: hidden;
-            }}
-
-            .kpi-card::before {{
-                content: '';
-                position: absolute;
-                top: 0;
-                left: -100%;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-                transition: left 0.5s;
+                transition: all 0.3s;
             }}
 
             .kpi-card:hover {{
-                transform: translateY(-8px) scale(1.02);
+                transform: translateY(-8px);
                 box-shadow: 0 20px 50px rgba(31, 78, 120, 0.3);
-                border-color: #3b82f6;
             }}
 
             .kpi-label {{
@@ -321,32 +216,39 @@ def generate_html_dashboard(df, kpis, charts):
                 margin-bottom: 12px;
                 font-weight: 600;
                 text-transform: uppercase;
-                letter-spacing: 1.5px;
             }}
 
             .kpi-value {{
                 font-size: 2.5em;
                 font-weight: 800;
                 color: #1F4E78;
-                margin-bottom: 5px;
-            }}
-
-            .kpi-value.critical {{
-                color: #C00000;
-            }}
-
-            .kpi-value.warning {{
-                color: #FFC000;
             }}
 
             .kpi-value.success {{
                 color: #70AD47;
             }}
 
-            .charts-section {{
+            .kpi-value.warning {{
+                color: #FFC000;
+            }}
+
+            .kpi-value.critical {{
+                color: #C00000;
+            }}
+
+            .section-title {{
+                font-size: 1.8em;
+                font-weight: 700;
+                color: #e2e8f0;
+                margin: 50px 0 30px 0;
+                padding: 20px;
+                border-left: 4px solid #1F4E78;
+            }}
+
+            .chart-with-explanation {{
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-                gap: 35px;
+                grid-template-columns: 1fr 1fr;
+                gap: 30px;
                 margin-bottom: 50px;
             }}
 
@@ -356,12 +258,29 @@ def generate_html_dashboard(df, kpis, charts):
                 border-radius: 12px;
                 border: 1px solid #334155;
                 box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-                transition: all 0.3s ease;
             }}
 
-            .chart-container:hover {{
-                border-color: #1F4E78;
-                box-shadow: 0 20px 50px rgba(31, 78, 120, 0.3);
+            .explanation {{
+                background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                padding: 30px;
+                border-radius: 12px;
+                border: 1px solid #334155;
+                border-left: 4px solid #1F4E78;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }}
+
+            .explanation h3 {{
+                font-size: 1.2em;
+                margin-bottom: 15px;
+                color: #1F4E78;
+            }}
+
+            .explanation p {{
+                font-size: 1em;
+                line-height: 1.6;
+                color: #cbd5e1;
             }}
 
             .full-width {{
@@ -373,41 +292,20 @@ def generate_html_dashboard(df, kpis, charts):
                 color: #94a3b8;
                 margin-top: 60px;
                 padding: 30px;
-                background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-                border-radius: 12px;
-                border: 1px solid #334155;
-                font-size: 0.95em;
+                border-top: 1px solid #334155;
             }}
 
-            footer p {{
-                margin: 8px 0;
-            }}
-
-            @media (max-width: 768px) {{
-                .header {{
-                    padding: 40px 20px;
+            @media (max-width: 1024px) {{
+                .chart-with-explanation {{
+                    grid-template-columns: 1fr;
                 }}
 
                 .header h1 {{
                     font-size: 2em;
                 }}
 
-                .charts-section {{
-                    grid-template-columns: 1fr;
-                    gap: 25px;
-                }}
-
                 .kpi-section {{
                     grid-template-columns: repeat(2, 1fr);
-                    gap: 15px;
-                }}
-
-                .kpi-card {{
-                    padding: 20px;
-                }}
-
-                .kpi-value {{
-                    font-size: 1.8em;
                 }}
             }}
         </style>
@@ -417,7 +315,7 @@ def generate_html_dashboard(df, kpis, charts):
             <div class="header">
                 <h1>🏦 Axis Bank Control Testing Dashboard</h1>
                 <p>Internal Audit & Compliance Testing Analysis</p>
-                <div class="reporting-date">Testing Period: Jan 2024 - Dec 2024 | Report Generated: {datetime.now().strftime('%B %d, %Y')}</div>
+                <div style="margin-top: 20px; opacity: 0.9;">Testing Period: Jan 2024 - Dec 2024 | Report Generated: {datetime.now().strftime('%B %d, %Y')}</div>
             </div>
 
             <div class="kpi-section">
@@ -447,44 +345,134 @@ def generate_html_dashboard(df, kpis, charts):
                 </div>
             </div>
 
-            <div class="charts-section">
+            <div class="section-title">📊 Control Testing Analysis</div>
+
+            <div class="chart-with-explanation">
                 <div class="chart-container">
-                    <div id="deficiency-chart"></div>
+                    <div id="deficiency-chart" style="height: 400px;"></div>
+                </div>
+                <div class="explanation">
+                    <h3>Deficiency Classification</h3>
+                    <p>{chart_explanations['deficiency']}</p>
+                </div>
+            </div>
+
+            <div class="chart-with-explanation">
+                <div class="explanation">
+                    <h3>Control Operating Effectiveness</h3>
+                    <p>{chart_explanations['effectiveness']}</p>
                 </div>
                 <div class="chart-container">
-                    <div id="control-effectiveness"></div>
+                    <div id="control-effectiveness" style="height: 400px;"></div>
                 </div>
+            </div>
+
+            <div class="chart-with-explanation full-width">
                 <div class="chart-container full-width">
-                    <div id="risk-heatmap"></div>
+                    <div id="risk-heatmap" style="height: 400px;"></div>
+                </div>
+            </div>
+            <div class="explanation full-width">
+                <h3>Risk Heat Map Explanation</h3>
+                <p>{chart_explanations['heatmap']}</p>
+            </div>
+
+            <div class="chart-with-explanation">
+                <div class="chart-container">
+                    <div id="volume-trend" style="height: 400px;"></div>
+                </div>
+                <div class="explanation">
+                    <h3>Transaction Volume Analysis</h3>
+                    <p>{chart_explanations['volume']}</p>
+                </div>
+            </div>
+
+            <div class="chart-with-explanation">
+                <div class="explanation">
+                    <h3>Exception Trends</h3>
+                    <p>{chart_explanations['exceptions']}</p>
                 </div>
                 <div class="chart-container">
-                    <div id="volume-trend"></div>
+                    <div id="exception-trend" style="height: 400px;"></div>
                 </div>
+            </div>
+
+            <div class="chart-with-explanation">
                 <div class="chart-container">
-                    <div id="exception-trend"></div>
+                    <div id="exception-by-type" style="height: 400px;"></div>
                 </div>
-                <div class="chart-container">
-                    <div id="exception-by-type"></div>
+                <div class="explanation">
+                    <h3>Transaction Type Analysis</h3>
+                    <p>{chart_explanations['by_type']}</p>
                 </div>
             </div>
 
             <footer>
                 <p><strong>Axis Bank Internal Audit & Compliance</strong></p>
                 <p>Control Testing & Effectiveness Assessment Dashboard</p>
-                <p>Professional Control Testing Simulation for Audit & Compliance Functions</p>
             </footer>
         </div>
 
         <script>
-            var chartsData = {chart_json};
+            // Chart 1: Deficiency Breakdown
+            var deficiency_data = {{
+                x: {json.dumps(charts['deficiency']['x'])},
+                y: {json.dumps(charts['deficiency']['y'])},
+                type: 'bar',
+                marker: {{color: {json.dumps(charts['deficiency']['colors'])}}}
+            }};
+            Plotly.newPlot('deficiency-chart', [deficiency_data], {{'title': 'Deficiency Classification Breakdown', 'xaxis': {{'title': 'Deficiency Class'}}, 'yaxis': {{'title': 'Count'}}, 'plot_bgcolor': '#0f172a', 'paper_bgcolor': '#1e293b', 'font': {{'color': '#e2e8f0'}}}}, {{responsive: true}});
 
-            // Render each chart
-            Plotly.newPlot('deficiency-chart', chartsData['deficiency'].data, chartsData['deficiency'].layout, {{responsive: true}});
-            Plotly.newPlot('control-effectiveness', chartsData['effectiveness'].data, chartsData['effectiveness'].layout, {{responsive: true}});
-            Plotly.newPlot('risk-heatmap', chartsData['risk_heatmap'].data, chartsData['risk_heatmap'].layout, {{responsive: true}});
-            Plotly.newPlot('volume-trend', chartsData['volume_trend'].data, chartsData['volume_trend'].layout, {{responsive: true}});
-            Plotly.newPlot('exception-trend', chartsData['exception_trend'].data, chartsData['exception_trend'].layout, {{responsive: true}});
-            Plotly.newPlot('exception-by-type', chartsData['exception_type'].data, chartsData['exception_type'].layout, {{responsive: true}});
+            // Chart 2: Control Effectiveness
+            var effectiveness_data = {{
+                x: {json.dumps(charts['effectiveness']['x'])},
+                y: {json.dumps(charts['effectiveness']['y'])},
+                type: 'bar',
+                marker: {{color: {json.dumps(charts['effectiveness']['colors'])}}}
+            }};
+            Plotly.newPlot('control-effectiveness', [effectiveness_data], {{'title': 'Control Operating Effectiveness (%)', 'xaxis': {{'title': 'Control'}}, 'yaxis': {{'title': 'Effectiveness %'}}, 'plot_bgcolor': '#0f172a', 'paper_bgcolor': '#1e293b', 'font': {{'color': '#e2e8f0'}}}}, {{responsive: true}});
+
+            // Chart 3: Heat Map
+            var heatmap_data = {{
+                z: {json.dumps(charts['heatmap']['z'])},
+                x: {json.dumps(charts['heatmap']['x'])},
+                y: {json.dumps(charts['heatmap']['y'])},
+                type: 'heatmap',
+                colorscale: 'Reds'
+            }};
+            Plotly.newPlot('risk-heatmap', [heatmap_data], {{'title': 'Risk Heat Map', 'plot_bgcolor': '#0f172a', 'paper_bgcolor': '#1e293b', 'font': {{'color': '#e2e8f0'}}}}, {{responsive: true}});
+
+            // Chart 4: Volume Trend
+            var volume_data = {{
+                x: {json.dumps([str(d) for d in charts['volume']['x']])},
+                y: {json.dumps(charts['volume']['y'])},
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: {{color: '#1F4E78'}},
+                fill: 'tozeroy'
+            }};
+            Plotly.newPlot('volume-trend', [volume_data], {{'title': 'Daily Transaction Volume', 'xaxis': {{'title': 'Date'}}, 'yaxis': {{'title': 'Transactions'}}, 'plot_bgcolor': '#0f172a', 'paper_bgcolor': '#1e293b', 'font': {{'color': '#e2e8f0'}}}}, {{responsive: true}});
+
+            // Chart 5: Exception Trend
+            var exception_data = {{
+                x: {json.dumps([str(d) for d in charts['exceptions']['x']])},
+                y: {json.dumps(charts['exceptions']['y'])},
+                type: 'scatter',
+                mode: 'lines+markers',
+                line: {{color: '#C00000'}},
+                fill: 'tozeroy'
+            }};
+            Plotly.newPlot('exception-trend', [exception_data], {{'title': 'Daily Exceptions', 'xaxis': {{'title': 'Date'}}, 'yaxis': {{'title': 'Exceptions'}}, 'plot_bgcolor': '#0f172a', 'paper_bgcolor': '#1e293b', 'font': {{'color': '#e2e8f0'}}}}, {{responsive: true}});
+
+            // Chart 6: By Type
+            var by_type_data = {{
+                x: {json.dumps(charts['by_type']['x'])},
+                y: {json.dumps(charts['by_type']['y'])},
+                type: 'bar',
+                orientation: 'h',
+                marker: {{color: '#FFC000'}}
+            }};
+            Plotly.newPlot('exception-by-type', [by_type_data], {{'title': 'Exceptions by Type', 'xaxis': {{'title': 'Count'}}, 'plot_bgcolor': '#0f172a', 'paper_bgcolor': '#1e293b', 'font': {{'color': '#e2e8f0'}}}}, {{responsive: true}});
         </script>
     </body>
     </html>
@@ -500,24 +488,17 @@ def main():
     kpis = create_kpi_metrics(df)
 
     print("Creating charts...")
-    charts = {
-        'deficiency': create_deficiency_breakdown(df),
-        'effectiveness': create_control_effectiveness(df),
-        'volume_trend': create_transaction_volume_trend(df),
-        'exception_trend': create_exception_trend(df),
-        'exception_type': create_exception_by_txn_type(df),
-        'risk_heatmap': create_risk_heatmap(df),
-    }
+    charts = create_charts(df)
 
     print("Generating HTML...")
     html = generate_html_dashboard(df, kpis, charts)
 
-    # Save
     output_path = 'website/index.html'
     with open(output_path, 'w') as f:
         f.write(html)
 
     print(f"✓ Dashboard saved to {output_path}")
+    print(f"✓ Charts embedded with explanatory text")
 
 if __name__ == '__main__':
     main()
