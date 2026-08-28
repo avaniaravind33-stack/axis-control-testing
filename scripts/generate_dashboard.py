@@ -7,6 +7,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
+import json
 
 def load_data():
     """Load control testing data"""
@@ -51,6 +52,9 @@ def create_deficiency_breakdown(df):
         yaxis_title="Number of Exceptions",
         height=400,
         showlegend=False,
+        plot_bgcolor='#0f172a',
+        paper_bgcolor='#1e293b',
+        font=dict(color='#e2e8f0'),
     )
     return fig
 
@@ -81,6 +85,9 @@ def create_control_effectiveness(df):
         yaxis_title="Effectiveness %",
         height=400,
         showlegend=False,
+        plot_bgcolor='#0f172a',
+        paper_bgcolor='#1e293b',
+        font=dict(color='#e2e8f0'),
     )
     return fig
 
@@ -103,6 +110,9 @@ def create_transaction_volume_trend(df):
         xaxis_title="Date",
         yaxis_title="Transactions",
         height=400,
+        plot_bgcolor='#0f172a',
+        paper_bgcolor='#1e293b',
+        font=dict(color='#e2e8f0'),
     )
     return fig
 
@@ -125,6 +135,9 @@ def create_exception_trend(df):
         xaxis_title="Date",
         yaxis_title="Exceptions",
         height=400,
+        plot_bgcolor='#0f172a',
+        paper_bgcolor='#1e293b',
+        font=dict(color='#e2e8f0'),
     )
     return fig
 
@@ -147,12 +160,14 @@ def create_exception_by_txn_type(df):
         xaxis_title="Count",
         yaxis_title="Transaction Type",
         height=400,
+        plot_bgcolor='#0f172a',
+        paper_bgcolor='#1e293b',
+        font=dict(color='#e2e8f0'),
     )
     return fig
 
 def create_risk_heatmap(df):
     """Create risk heat map by control and deficiency"""
-    # Create crosstab
     controls = ['C001_Maker_Checker', 'C002_Auth_Limit', 'C003_SOD', 'C004_4Eyes', 'C005_Duplicate']
     risk_data = []
 
@@ -174,11 +189,19 @@ def create_risk_heatmap(df):
     fig.update_layout(
         title="Risk Heat Map: Control vs Deficiency Class",
         height=400,
+        plot_bgcolor='#0f172a',
+        paper_bgcolor='#1e293b',
+        font=dict(color='#e2e8f0'),
     )
     return fig
 
-def generate_html_dashboard(df, kpis):
-    """Generate complete HTML dashboard"""
+def generate_html_dashboard(df, kpis, charts):
+    """Generate complete HTML dashboard with embedded charts"""
+
+    # Convert charts to JSON for embedding
+    chart_json = {}
+    for name, fig in charts.items():
+        chart_json[name] = fig.to_json()
 
     html_content = f"""
     <!DOCTYPE html>
@@ -341,28 +364,8 @@ def generate_html_dashboard(df, kpis):
                 box-shadow: 0 20px 50px rgba(31, 78, 120, 0.3);
             }}
 
-            .chart-title {{
-                font-size: 1.3em;
-                font-weight: 700;
-                color: #e2e8f0;
-                margin-bottom: 20px;
-                padding-bottom: 12px;
-                border-bottom: 2px solid #334155;
-            }}
-
             .full-width {{
                 grid-column: 1 / -1;
-            }}
-
-            .section-divider {{
-                text-align: center;
-                font-size: 1.4em;
-                font-weight: 700;
-                color: #e2e8f0;
-                margin: 50px 0 30px 0;
-                padding: 20px;
-                border-top: 2px solid #334155;
-                border-bottom: 2px solid #334155;
             }}
 
             footer {{
@@ -471,6 +474,18 @@ def generate_html_dashboard(df, kpis):
                 <p>Professional Control Testing Simulation for Audit & Compliance Functions</p>
             </footer>
         </div>
+
+        <script>
+            var chartsData = {chart_json};
+
+            // Render each chart
+            Plotly.newPlot('deficiency-chart', chartsData['deficiency'].data, chartsData['deficiency'].layout, {{responsive: true}});
+            Plotly.newPlot('control-effectiveness', chartsData['effectiveness'].data, chartsData['effectiveness'].layout, {{responsive: true}});
+            Plotly.newPlot('risk-heatmap', chartsData['risk_heatmap'].data, chartsData['risk_heatmap'].layout, {{responsive: true}});
+            Plotly.newPlot('volume-trend', chartsData['volume_trend'].data, chartsData['volume_trend'].layout, {{responsive: true}});
+            Plotly.newPlot('exception-trend', chartsData['exception_trend'].data, chartsData['exception_trend'].layout, {{responsive: true}});
+            Plotly.newPlot('exception-by-type', chartsData['exception_type'].data, chartsData['exception_type'].layout, {{responsive: true}});
+        </script>
     </body>
     </html>
     """
@@ -495,43 +510,12 @@ def main():
     }
 
     print("Generating HTML...")
-    html = generate_html_dashboard(df, kpis)
-
-    # Add charts to HTML with full scripts
-    chart_ids = {
-        'deficiency-chart': charts['deficiency'],
-        'control-effectiveness': charts['effectiveness'],
-        'risk-heatmap': charts['risk_heatmap'],
-        'volume-trend': charts['volume_trend'],
-        'exception-trend': charts['exception_trend'],
-        'exception-by-type': charts['exception_type'],
-    }
-
-    # Generate script tags for each chart
-    chart_scripts = []
-    for chart_id, chart_obj in chart_ids.items():
-        chart_html = chart_obj.to_html(include_plotlyjs=False, div_id=chart_id)
-        # Extract the Plotly.newPlot call
-        start = chart_html.find('Plotly.newPlot(')
-        if start == -1:
-            # Fallback: use full HTML and extract script
-            start = chart_html.find('<script')
-            if start != -1:
-                end = chart_html.find('</script>') + len('</script>')
-                script_content = chart_html[start:end]
-                chart_scripts.append(script_content)
-        else:
-            end = chart_html.rfind(');') + 2
-            script_content = chart_html[start:end]
-            chart_scripts.append(f'<script>{script_content}</script>')
-
-    # Insert scripts before closing body tag
-    final_html = html.replace('</body>', '\n'.join(chart_scripts) + '\n</body>')
+    html = generate_html_dashboard(df, kpis, charts)
 
     # Save
     output_path = 'website/index.html'
     with open(output_path, 'w') as f:
-        f.write(final_html)
+        f.write(html)
 
     print(f"✓ Dashboard saved to {output_path}")
 
