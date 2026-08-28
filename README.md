@@ -16,6 +16,63 @@ This project showcases **internal audit and compliance control testing** through
 ✅ **Audit Vocabulary** — Deficiency classification (Critical/Major/Minor), control ownership, risk ratings  
 ✅ **Professional Compliance** — Realistic failure rates, regulatory considerations, SLA compliance  
 
+## 🔄 Control Testing Methodology
+
+This project demonstrates a **complete control testing lifecycle**, not just exception detection:
+
+```
+┌─────────────────┐
+│ Risk Identified │
+└────────┬────────┘
+         ↓
+┌──────────────────────┐
+│ Control Objective    │ (What risk does this control address?)
+└────────┬─────────────┘
+         ↓
+┌──────────────────────────────┐
+│ Design Effectiveness         │ (Is the control design adequate?)
+│ Assessment                   │
+└────────┬─────────────────────┘
+         ↓
+┌──────────────────────────────┐
+│ Test Procedure Developed     │ (How will we test it?)
+└────────┬─────────────────────┘
+         ↓
+┌──────────────────────────────┐
+│ Sample Selection             │ (What transactions to test?)
+└────────┬─────────────────────┘
+         ↓
+┌──────────────────────────────┐
+│ Evidence Review              │ (Did control operate correctly?)
+└────────┬─────────────────────┘
+         ↓
+┌──────────────────────────────┐
+│ Operating Effectiveness      │ (Did it work consistently?)
+│ Assessment (15,000 txns)     │
+└────────┬─────────────────────┘
+         ↓
+┌──────────────────────────────┐
+│ Exceptions Identified        │ (What failed? How many?)
+└────────┬─────────────────────┘
+         ↓
+┌──────────────────────────────┐
+│ Deficiency Classification    │ (Critical/Major/Minor?)
+└────────┬─────────────────────┘
+         ↓
+┌──────────────────────────────┐
+│ Risk Rating & Root Cause     │ (Why did it fail?)
+└────────┬─────────────────────┘
+         ↓
+┌──────────────────────────────┐
+│ Remediation Actions          │ (How to fix it?)
+│ & Management Reporting       │
+└──────────────────────────────┘
+```
+
+**This is different from "finding bad transactions."** We're assessing whether controls, as designed, adequately address risks (design effectiveness) AND whether they actually operated consistently (operating effectiveness).
+
+---
+
 ## 📊 Controls Tested
 
 ### Five Core Controls
@@ -84,6 +141,49 @@ This project showcases **internal audit and compliance control testing** through
 - Modern dark theme with Axis Bank branding
 - Responsive design (mobile-friendly)
 - Professional audit-grade styling
+
+### 3. Professional Web Dashboard (`website/index.html`)
+
+**Live Analytics with:**
+- 6 KPI cards: Transactions tested, compliance rate, deficiency breakdown
+- 6 Interactive Plotly charts:
+  - Deficiency Classification Breakdown
+  - Control Operating Effectiveness (%)
+  - Risk Heat Map (Control vs Deficiency)
+  - Daily Transaction Volume Trend
+  - Daily Exception Trend
+  - Exceptions by Transaction Type
+- Modern dark theme with Axis Bank branding
+- Responsive design (mobile-friendly)
+- Professional audit-grade styling
+
+### 4. Control Testing Findings Report (`excel/Control_Testing_Findings_Report.xlsx`)
+
+**Professional Management-Level Report with 3 Worksheets:**
+
+1. **Management Summary** (One-Page Executive View)
+   - Controls tested: 5
+   - Transactions analyzed: 15,000
+   - Exceptions identified: 232
+   - Critical/High/Medium risk breakdown
+   - Top 3 control weaknesses with exception counts
+   - Recommended remediation actions with ownership
+   - Risk assessment summary
+
+2. **Findings Detail** (Complete Finding Records)
+   - Finding ID, Control, Risk, Evidence
+   - Deficiency classification (Critical/Major/Minor)
+   - Severity-coded color highlighting
+   - Root cause analysis for each finding
+   - Specific recommendations for remediation
+   - Owner assignment and status tracking
+   - Days open / overdue tracking
+
+3. **Exception Summary** (Control-by-Control Breakdown)
+   - Pass/fail counts by control
+   - Exception rate percentages
+   - Top reason for each control failure
+   - Remediation status for each control
 
 ## 🚀 Live Dashboard
 
