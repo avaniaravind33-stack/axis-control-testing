@@ -1,0 +1,300 @@
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Axis Bank Control Testing Dashboard</title>
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+                min-height: 100vh;
+                padding: 40px 20px;
+                color: #e2e8f0;
+            }
+
+            .container {
+                max-width: 1800px;
+                margin: 0 auto;
+            }
+
+            .header {
+                background: linear-gradient(135deg, #1F4E78 0%, #2d5a96 50%, #1F4E78 100%);
+                color: white;
+                padding: 50px 40px;
+                border-radius: 16px;
+                margin-bottom: 50px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 80px rgba(31, 78, 120, 0.3);
+                position: relative;
+                overflow: hidden;
+                border: 1px solid rgba(255,255,255,0.1);
+            }
+
+            .header::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                right: -10%;
+                width: 600px;
+                height: 600px;
+                background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+                border-radius: 50%;
+            }
+
+            .header h1 {
+                font-size: 3.5em;
+                margin-bottom: 15px;
+                font-weight: 800;
+                position: relative;
+                z-index: 1;
+                letter-spacing: -1px;
+            }
+
+            .header p {
+                font-size: 1.3em;
+                opacity: 0.95;
+                position: relative;
+                z-index: 1;
+                font-weight: 300;
+            }
+
+            .reporting-date {
+                font-size: 0.95em;
+                opacity: 0.85;
+                margin-top: 20px;
+                position: relative;
+                z-index: 1;
+            }
+
+            .kpi-section {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 25px;
+                margin-bottom: 50px;
+            }
+
+            .kpi-card {
+                background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                padding: 30px;
+                border-radius: 12px;
+                border: 1px solid #334155;
+                text-align: center;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                cursor: pointer;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .kpi-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+                transition: left 0.5s;
+            }
+
+            .kpi-card:hover {
+                transform: translateY(-8px) scale(1.02);
+                box-shadow: 0 20px 50px rgba(31, 78, 120, 0.3);
+                border-color: #3b82f6;
+            }
+
+            .kpi-label {
+                font-size: 0.85em;
+                color: #94a3b8;
+                margin-bottom: 12px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 1.5px;
+            }
+
+            .kpi-value {
+                font-size: 2.5em;
+                font-weight: 800;
+                color: #1F4E78;
+                margin-bottom: 5px;
+            }
+
+            .kpi-value.critical {
+                color: #C00000;
+            }
+
+            .kpi-value.warning {
+                color: #FFC000;
+            }
+
+            .kpi-value.success {
+                color: #70AD47;
+            }
+
+            .charts-section {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+                gap: 35px;
+                margin-bottom: 50px;
+            }
+
+            .chart-container {
+                background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                padding: 30px;
+                border-radius: 12px;
+                border: 1px solid #334155;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+                transition: all 0.3s ease;
+            }
+
+            .chart-container:hover {
+                border-color: #1F4E78;
+                box-shadow: 0 20px 50px rgba(31, 78, 120, 0.3);
+            }
+
+            .chart-title {
+                font-size: 1.3em;
+                font-weight: 700;
+                color: #e2e8f0;
+                margin-bottom: 20px;
+                padding-bottom: 12px;
+                border-bottom: 2px solid #334155;
+            }
+
+            .full-width {
+                grid-column: 1 / -1;
+            }
+
+            .section-divider {
+                text-align: center;
+                font-size: 1.4em;
+                font-weight: 700;
+                color: #e2e8f0;
+                margin: 50px 0 30px 0;
+                padding: 20px;
+                border-top: 2px solid #334155;
+                border-bottom: 2px solid #334155;
+            }
+
+            footer {
+                text-align: center;
+                color: #94a3b8;
+                margin-top: 60px;
+                padding: 30px;
+                background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+                border-radius: 12px;
+                border: 1px solid #334155;
+                font-size: 0.95em;
+            }
+
+            footer p {
+                margin: 8px 0;
+            }
+
+            @media (max-width: 768px) {
+                .header {
+                    padding: 40px 20px;
+                }
+
+                .header h1 {
+                    font-size: 2em;
+                }
+
+                .charts-section {
+                    grid-template-columns: 1fr;
+                    gap: 25px;
+                }
+
+                .kpi-section {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 15px;
+                }
+
+                .kpi-card {
+                    padding: 20px;
+                }
+
+                .kpi-value {
+                    font-size: 1.8em;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🏦 Axis Bank Control Testing Dashboard</h1>
+                <p>Internal Audit & Compliance Testing Analysis</p>
+                <div class="reporting-date">Testing Period: Jan 2024 - Dec 2024 | Report Generated: August 28, 2026</div>
+            </div>
+
+            <div class="kpi-section">
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Transactions Tested</div>
+                    <div class="kpi-value">15,000</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Compliant Transactions</div>
+                    <div class="kpi-value success">0</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Compliance Rate</div>
+                    <div class="kpi-value success">0.00%</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Exceptions</div>
+                    <div class="kpi-value warning">15,000</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Critical Deficiencies</div>
+                    <div class="kpi-value critical">73</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Major Deficiencies</div>
+                    <div class="kpi-value warning">111</div>
+                </div>
+            </div>
+
+            <div class="charts-section">
+                <div class="chart-container">
+                    <div id="deficiency-chart"></div>
+<script></script>
+                </div>
+                <div class="chart-container">
+                    <div id="control-effectiveness"></div>
+<script></script>
+                </div>
+                <div class="chart-container full-width">
+                    <div id="risk-heatmap"></div>
+<script></script>
+                </div>
+                <div class="chart-container">
+                    <div id="volume-trend"></div>
+<script></script>
+                </div>
+                <div class="chart-container">
+                    <div id="exception-trend"></div>
+<script></script>
+                </div>
+                <div class="chart-container">
+                    <div id="exception-by-type"></div>
+<script></script>
+                </div>
+            </div>
+
+            <footer>
+                <p><strong>Axis Bank Internal Audit & Compliance</strong></p>
+                <p>Control Testing & Effectiveness Assessment Dashboard</p>
+                <p>Professional Control Testing Simulation for Audit & Compliance Functions</p>
+            </footer>
+        </div>
+    </body>
+    </html>
+    
